@@ -1,5 +1,5 @@
 {
-  "name": "@su/axios",
+  "name": "@comtstore/axios",
   "version": "1.0.1",
   "main": "./dist/index.esm.js",
   "type": "module",
