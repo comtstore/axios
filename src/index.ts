@@ -120,11 +120,11 @@ class AxiosRequest {
     )
     // 响应请求的拦截器
     instance.interceptors.response.use(
-      (res) => {
+      async (res) => {
         const key = res.config.url + '&' + res.config.method
         this.removePending(key)
         // 执行验证器对数据进行处理
-        res = this.responseValidator.validate(res, validators)
+        res = await this.responseValidator.validate(res, validators)
         if (res.status === 200) {
           return Promise.resolve(res.data)
         } else {
