@@ -131,8 +131,10 @@ class AxiosRequest {
           return Promise.reject(res)
         }
       },
-      (err) => {
+      async (err) => {
         this.onerror(err)
+        const responseData = err.response.data
+        await this.responseValidator.validate(responseData, validators)
         return Promise.reject(err)
       }
     )
