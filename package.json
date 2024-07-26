@@ -41,5 +41,8 @@
     "axios": "^1.1.3"
   },
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "@comtstore/mobx": "^6.8.1-alpha.2",
+    "@comtstore/pipeline": "^1.0.7"
+  }
 }

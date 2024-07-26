@@ -1,4 +1,6 @@
 import axios from 'axios'
+import ResponseValidator from './modules/response-validator'
+import { IReponseValidatorConfig } from './modules/response-validator/interface'
 const CancelToken = axios.CancelToken // 引入取消请求方法
 
 /**
@@ -17,13 +19,19 @@ class AxiosRequest {
     baseUrl: string,
     publicPath?: RegExp[],
     token?: string | (() => string), // 获取token的函数
-    onerror?: (err) => void
+    // eslint-disable-next-line no-unused-vars
+    onerror?: (err: any) => void,
+    responseValidators?: Array<IReponseValidatorConfig> // 全局提供请求验证器
   }) {
     this.baseUrl = options.baseUrl
     this.token = options.token ?? false
     this.publicPath = options.publicPath ?? []
     this.onerror = options.onerror ?? (() => {})
     this.pending = {}
+    if(options.responseValidators){
+      this.globalResponseValidators = options.responseValidators
+    }
+    this.initailResponseValidator()
   }
 
   public token: string | (() => string) | boolean
@@ -32,7 +40,10 @@ class AxiosRequest {
   public pending: {
     [key: string]: any
   } = {}
-  public onerror: (err) => void = () => {}
+  // eslint-disable-next-line no-unused-vars
+  public onerror: (err: any) => void = () => {}
+  private globalResponseValidators: Array<IReponseValidatorConfig> = []
+  private responseValidator: ResponseValidator
 
   // 设定基础配置
   private getInsideConfig () {
@@ -75,8 +86,12 @@ class AxiosRequest {
     return ''
   }
 
+  private initailResponseValidator = () => {
+    this.responseValidator = new ResponseValidator(this.globalResponseValidators)
+  }
+
   // 设定拦截器（不暴露）
-  private interceptors (instance) {
+  private interceptors (instance, validators: Array<IReponseValidatorConfig>) {
     // 请求拦截器
     instance.interceptors.request.use(
       (config) => {
@@ -108,6 +123,8 @@ class AxiosRequest {
       (res) => {
         const key = res.config.url + '&' + res.config.method
         this.removePending(key)
+        // 执行验证器对数据进行处理
+        res = this.responseValidator.validate(res, validators)
         if (res.status === 200) {
           return Promise.resolve(res.data)
         } else {
@@ -122,31 +139,29 @@ class AxiosRequest {
   }
 
   // 创建实例(不暴露)
-  private request (options): Promise<{code: number, data?: any, message?: string, stack?: object}> {
+  private request (options, validators: Array<IReponseValidatorConfig>): Promise<{code: number, data?: any, message?: string, stack?: object}> {
     const instance = axios.create()
     const newOptions = Object.assign(this.getInsideConfig(), options)
-    this.interceptors(instance)
+    this.interceptors(instance, validators)
     return instance(newOptions)
   }
 
-  // 暴露
-  public get (url: string, config: { [key: string]: any }): Promise<{code: number, data?: any, message?: string, stack?: object, [key: string]: any}> {
+  public get (url: string, config: { [key: string]: any }, validators: Array<IReponseValidatorConfig> = []): Promise<{code: number, data?: any, message?: string, stack?: object, [key: string]: any}> {
     const options = Object.assign({
       method: 'get',
       url
     },
     config
     )
-    return this.request(options)
+    return this.request(options, validators)
   }
 
-  // 暴露
-  public post (url: string, data: { [key: string]: any }): Promise<{code: number, data?: any, message?: string, stack?: object, [key: string]: any}> {
+  public post (url: string, data: { [key: string]: any }, validators: Array<IReponseValidatorConfig> = []): Promise<{code: number, data?: any, message?: string, stack?: object, [key: string]: any}> {
     return this.request({
       method: 'post',
       url,
       data
-    })
+    }, validators)
   }
 }
 
