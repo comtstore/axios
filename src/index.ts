@@ -124,7 +124,7 @@ class AxiosRequest {
         const key = res.config.url + '&' + res.config.method
         this.removePending(key)
         // 执行验证器对数据进行处理
-        res = await this.responseValidator.validate(res.data, validators)
+        await this.responseValidator.validate(res.data, validators)
         if (res.status === 200) {
           return Promise.resolve(res.data)
         } else {

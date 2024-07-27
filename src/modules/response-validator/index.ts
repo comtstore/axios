@@ -52,8 +52,8 @@ class ResponseValidator {
     if(!this.loadMiddlewares(pl, validators)){ 
       return res 
     }
-    void pl.execute()
     try {
+      void pl.execute()
       await pl.output()
     } catch (err) {
       console.error('验证器流发生错误: ', err)
