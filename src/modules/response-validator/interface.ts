@@ -5,7 +5,7 @@ export interface IReponseValidatorConfig {
      * @returns
      */
     // eslint-disable-next-line no-unused-vars
-    condition: (res: any) => boolean
+    condition?: (res: any) => boolean
     /**
      * 条件命中时，如何处理
      * @param data

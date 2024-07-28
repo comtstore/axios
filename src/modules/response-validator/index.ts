@@ -29,10 +29,11 @@ class ResponseValidator {
     }
     for (const validateConfig of loadedValidators) {
       pl.conditionalUse(
-        (ctx) => validateConfig.condition(ctx.ip.res),
-        (ctx) => {
+        (ctx) => validateConfig.condition ? validateConfig.condition(ctx.ip.res) : true,
+        async (ctx, next) => {
           validateConfig.handler(ctx.ip.res)
           ctx.op.isValidate = validateConfig.isSuccess
+          await next()
         }
       )
     }

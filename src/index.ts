@@ -1,6 +1,7 @@
 import axios from 'axios'
 import ResponseValidator from './modules/response-validator'
 import { IReponseValidatorConfig } from './modules/response-validator/interface'
+import { ICookieConfig } from './interface'
 const CancelToken = axios.CancelToken // 引入取消请求方法
 
 /**
@@ -21,6 +22,10 @@ class AxiosRequest {
     token?: string | (() => string), // 获取token的函数
     // eslint-disable-next-line no-unused-vars
     onerror?: (err: any) => void,
+    /**
+     * cookie特性的配置
+     */
+    cookieConfig?: ICookieConfig,
     responseValidators?: Array<IReponseValidatorConfig> // 全局提供请求验证器
   }) {
     this.baseUrl = options.baseUrl
@@ -28,6 +33,9 @@ class AxiosRequest {
     this.publicPath = options.publicPath ?? []
     this.onerror = options.onerror ?? (() => {})
     this.pending = {}
+    if(options.cookieConfig){
+      this.cookieConfig = options.cookieConfig
+    }
     if(options.responseValidators){
       this.globalResponseValidators = options.responseValidators
     }
@@ -40,6 +48,7 @@ class AxiosRequest {
   public pending: {
     [key: string]: any
   } = {}
+  public cookieConfig: ICookieConfig | undefined = undefined
   // eslint-disable-next-line no-unused-vars
   public onerror: (err: any) => void = () => {}
   private globalResponseValidators: Array<IReponseValidatorConfig> = []
@@ -98,7 +107,22 @@ class AxiosRequest {
         let isPublic = false
         this.publicPath.map((path) => {
           isPublic = isPublic || path.test(config.url)
-        })
+        })  
+
+        /**
+         * 允许设置cookie
+         */
+        if(this.cookieConfig?.open){
+          config.withCredentials = true
+        }
+
+        /**
+         * 引入csrf token
+         */
+        if(this.cookieConfig?.open && this.cookieConfig.csrf?.open){
+          const token = this.cookieConfig.csrf.token()
+          config.headers['X-CSRF-TOKEN'] = token 
+        }
 
         if (!isPublic && this.token) {
           config.headers.Authorization = this.getToken()
